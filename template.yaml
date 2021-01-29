@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  todo-list-aws
+
+  Sample SAM Template for todo-list-aws
+Parameters:
+  stage:
+    Type: String
+    Default: develop
+  service:
+    Type: String
+    Default: serverless-rest-api-with-dynamodb
+  serviceTest:
+    Type: String
+    Default: todo-list-aws
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Sub ${serviceTest}-${stage}
+    Timeout: 3
+
+Resources:
+  createFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/create.create
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-createFunction-${stage}
+      Policies:
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+      Events:
+        create:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos
+            Method: post
+  
+  listFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/list.list
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-listFunction-${stage}
+      Policies:
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+      Events:
+        list:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos
+            Method: get
+            
+  getFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/get.get
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-getFunction-${stage}
+      Policies: 
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+      Events:
+        get:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos/{id}
+            Method: get
+  
+  updateFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/update.update
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-updateFunction-${stage}
+      Policies: 
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+      Events:
+        update:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos/{id}
+            Method: put
+  
+  translateFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/translate.translate
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-translateFunction-${stage}
+      Policies: 
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+        - arn:aws:iam::414960104553:policy/AllowTranslate
+        - arn:aws:iam::414960104553:policy/AllowComprehend
+      Events:
+        translate:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos/{id}/{lang}
+            Method: get
+    
+  deleteFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: todos/delete.delete
+      Runtime: python3.8
+      FunctionName: !Sub ${serviceTest}-deleteFunction-${stage}
+      Policies: 
+        - arn:aws:iam::414960104553:policy/AllowDynamo
+      Events:
+        delete:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /todos/{id}
+            Method: delete
+
+  DynamoDBTable:
+   Type: AWS::DynamoDB::Table
+   DeletionPolicy: Retain
+   Properties:
+     AttributeDefinitions:
+       -
+         AttributeName: id
+         AttributeType: S
+     KeySchema:
+       -
+         AttributeName: id
+         KeyType: HASH
+     ProvisionedThroughput:
+       ReadCapacityUnits: 1
+       WriteCapacityUnits: 1
+     TableName: !Sub ${serviceTest}-${stage}
+
+Outputs:
+#   hello:
+  
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+
+  # HelloWorldFunction:
+  #   Description: "Hello World Lambda Function ARN"
+  #   Value: !GetAtt HelloWorldFunction.Arn
+  deleteFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt deleteFunction.Arn

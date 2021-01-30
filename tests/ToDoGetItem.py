@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
+from todos import todoList
 
 
 def get_todo(id, dynamodb=None):
@@ -10,11 +11,11 @@ def get_todo(id, dynamodb=None):
     table = dynamodb.Table('todoTable')
 
     try:
-        response = table.get_item(
-            Key={
+        Key={
                 'id': id
             }
-        )
+        response = todoList.get_item(Key)
+        
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:

@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
+from todos import todoList
 
 
 def delete_todo(id, dynamodb=None):
@@ -10,12 +11,12 @@ def delete_todo(id, dynamodb=None):
     table = dynamodb.Table('todoTable')
 
     try:
+        Key={
+            'id': id
+        }
         # delete the todo from the database
-        response = table.delete_item(
-            Key={
-                'id': id
-            }
-        )
+        response = todoList.delete_item(Key)
+        
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:

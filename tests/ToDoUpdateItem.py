@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import time
+from todos import todoList
 
 
 def update_todo(text, id, checked, dynamodb=None):
@@ -12,23 +13,15 @@ def update_todo(text, id, checked, dynamodb=None):
     timestamp = str(time.time())
 
     try:
-        response = table.update_item(
-            Key={
-                'id': id
-            },
-            ExpressionAttributeNames={
-                '#todo_text': 'text',
-            },
-            ExpressionAttributeValues={
-                ':text': text,
-                ':checked': checked,
-                ':updatedAt': timestamp,
-            },
-            UpdateExpression='SET #todo_text = :text, '
-                             'checked = :checked, '
-                             'updatedAt = :updatedAt',
-            ReturnValues='ALL_NEW',
-        )
+        data={
+            'text': text,
+            'checked': checked
+        }
+        Key={
+            'id': id
+        }
+        response = todoList.update_item(Key, data, timestamp)
+            
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:

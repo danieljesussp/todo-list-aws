@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import time
+from todos import todoList
 
 
 def put_todo(text, id, dynamodb=None):
@@ -12,14 +13,15 @@ def put_todo(text, id, dynamodb=None):
     timestamp = str(time.time())
 
     try:
-        response = table.put_item(
-            Item={
-                'id': id,
-                'text': text,
-                'checked': False,
-                'createdAt': timestamp,
-                'updatedAt': timestamp,
-            })
+        Item={
+            'id': id,
+            'text': text,
+            'checked': False,
+            'createdAt': timestamp,
+            'updatedAt': timestamp,
+        }
+    
+        response = todoList.put_item(Item)
 
     except ClientError as e:
         print(e.response['Error']['Message'])

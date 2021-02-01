@@ -11,9 +11,11 @@ def get_todo(id, dynamodb=None):
     table = dynamodb.Table('todoTable')
 
     try:
+        #Creacion de la variable con la PrimaryKey
         Key={
                 'id': id
             }
+        # Invocacion a la clase DAO para obtener el componente con ese ID
         response = todoList.get_item(Key)
         
     except ClientError as e:

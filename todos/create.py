@@ -13,7 +13,7 @@ def create(event, context):
         raise Exception("Couldn't create the todo item.")
     
     timestamp = str(time.time())
-
+    # Creacion de la variable JSON con el componente a insertar
     item = {
         'id': str(uuid.uuid1()),
         'text': data['text'],
@@ -21,7 +21,7 @@ def create(event, context):
         'createdAt': timestamp,
         'updatedAt': timestamp,
     }
-
+    # Invocacion de la clase DAO para insertar el componente
     todoList.put_item(item)
 
     # create a response

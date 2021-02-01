@@ -6,8 +6,7 @@ from todos import todoList
 
 
 def list(event, context):
-   
-    # fetch all todos from the database
+    # Invocacion a la clase DAO para obtener todos los elementos de la BBDD
     result = todoList.list_items()
 
     # create a response

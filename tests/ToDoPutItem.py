@@ -13,6 +13,7 @@ def put_todo(text, id, dynamodb=None):
     timestamp = str(time.time())
 
     try:
+        # Creacion de la variable a añadir en la BBDD
         Item={
             'id': id,
             'text': text,
@@ -20,7 +21,7 @@ def put_todo(text, id, dynamodb=None):
             'createdAt': timestamp,
             'updatedAt': timestamp,
         }
-    
+         # Invocacion a la clase DAO para añadir el componente
         response = todoList.put_item(Item)
 
     except ClientError as e:

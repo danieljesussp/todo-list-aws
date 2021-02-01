@@ -12,7 +12,7 @@ def list_todo(id, dynamodb=None):
     table = dynamodb.Table('todoTable')
 
     try:
-        # fetch all todos from the database
+        # Invocacion a la clase DAO para obtener todos los componentes de la BBDD
         response = todoList.list_items()
 
     except ClientError as e:

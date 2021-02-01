@@ -16,11 +16,12 @@ def update(event, context):
 
     timestamp = int(time.time() * 1000)
     
+    # Obtencion de la clave pasada por parametro en la URL
     Key={
             'id': event['pathParameters']['id']
         }
 
-    # update the todo in the database
+    # Invocacion a la clase DAO para actualizar el componente con ese ID y con esos datos y timestamp que se pasan
     result = todoList.update_item(Key, data, timestamp)
 
     # create a response

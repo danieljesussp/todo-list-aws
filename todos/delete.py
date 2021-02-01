@@ -3,12 +3,12 @@ from todos import todoList
 
 
 def delete(event, context):
-    
+    # Obtencion de la primary key pasada por parametro
     Key={
             'id': event['pathParameters']['id']
         }
 
-    # delete the todo from the database
+    # Invocacion a la clase DAO para eliminar el componente con ese ID
     todoList.delete_item(Key)
 
     # create a response

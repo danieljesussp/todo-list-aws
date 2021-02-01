@@ -11,10 +11,11 @@ def delete_todo(id, dynamodb=None):
     table = dynamodb.Table('todoTable')
 
     try:
+        # Creacion de la variable con el ID a eliminar
         Key={
             'id': id
         }
-        # delete the todo from the database
+        # Invocacion a la clase DAO para eliminar el componente con ese ID
         response = todoList.delete_item(Key)
         
     except ClientError as e:

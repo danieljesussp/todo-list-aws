@@ -55,3 +55,8 @@ El fichero de pruebas se denominará:
 ```
 TestToDoClass.py
 ```
+Para realizar los test unitarios sobre las nuevas funciones desarrolladas he seguido los siguientes pasos:
+1. En primer lugar he creado la nueva clase la cual invoca al resto de clases de la carpeta tests. 
+2. He modificado el resto de clases de las pruebas sobre las funciones, de manera que, en vez de invocar directamente a las funciones de lectura/escritura a la bbdd, utiliza las funciones que desarrollé.
+
+De esa manera, pasa las pruebas unitarias utilizando mis funciones implementadas. 

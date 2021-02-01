@@ -4,97 +4,143 @@ Description: >
   todo-list-aws
 
   Sample SAM Template for todo-list-aws
+# Creacion de variables que seran utilizadas para el deploy. 
 Parameters:
+  #Variable del estado en el que desplegar. Por defecto, sera develop
   stage:
     Type: String
     Default: develop
-  service:
-    Type: String
-    Default: serverless-rest-api-with-dynamodb
+  #Variable del nombre del servicio. Se utilizara para nombrar a los recursos
   serviceTest:
     Type: String
     Default: todo-list-aws
 
+# Creacion de variables globales
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Environment:
       Variables:
+        # Variable de entorno con el nombre de la tabla. Será una variable de entorno para utilizarla en todo el proyecto
         DYNAMODB_TABLE: !Sub ${serviceTest}-${stage}
     Timeout: 3
 
 Resources:
+  # Creacion de un API Gateway de tipo HttpApi para introducir la variable stage en la URL del gateway
+  # Se hare referencia a este resource en cada funcion REST
+  HttpApi:
+    # Debe de ser de tipo HttpApi debido a que las funciones REST son de ese tipo
+    Type: AWS::Serverless::HttpApi
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
+    Properties:
+      # Se le indica el stage que debe de insertar en la URL
+      StageName: !Sub ${stage}
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 200
+      FailOnWarnings: True
+  
+  # Funcion lambda create. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo    
   createFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/create.create
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-createFunction-${stage}
+      # Se le adjunta una politica creada donde la funcion tiene acceso sobre DynamoDB
       Policies:
         - arn:aws:iam::414960104553:policy/AllowDynamo
       Events:
         create:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos
             Method: post
   
+  # Funcion lambda list. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo
   listFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/list.list
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-listFunction-${stage}
+      # Se le adjunta una politica creada donde la funcion tiene acceso sobre DynamoDB
       Policies:
         - arn:aws:iam::414960104553:policy/AllowDynamo
       Events:
         list:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos
             Method: get
-            
+
+  # Funcion lambda get. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo            
   getFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/get.get
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-getFunction-${stage}
+      # Se le adjunta una politica creada donde la funcion tiene acceso sobre DynamoDB
       Policies: 
         - arn:aws:iam::414960104553:policy/AllowDynamo
       Events:
         get:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: get
-  
+
+  # Funcion lambda update. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo  
   updateFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/update.update
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-updateFunction-${stage}
+      # Se le adjunta una politica creada donde la funcion tiene acceso sobre DynamoDB
       Policies: 
         - arn:aws:iam::414960104553:policy/AllowDynamo
       Events:
         update:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: put
-  
+
+  # Funcion lambda translate. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo  
+  # Esta funcion utiliza mas politicas, ya que necesita acceso de lectura y escritura a la API Comprehend y Translate
   translateFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/translate.translate
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-translateFunction-${stage}
+      # Se le adjuntan tres politicas: la creada para tener acceso sobre DynamoDB, otra para la API de Translate y otra para la API de Comprehend
       Policies: 
         - arn:aws:iam::414960104553:policy/AllowDynamo
         - arn:aws:iam::414960104553:policy/AllowTranslate
@@ -103,27 +149,36 @@ Resources:
         translate:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos/{id}/{lang}
             Method: get
-    
+
+  # Funcion lambda delete. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo    
   deleteFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # El deletionPolicy es de tipo retain para que no lo elimine
+    DeletionPolicy: Retain
     Properties:
-      CodeUri: ./
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
       Handler: todos/delete.delete
       Runtime: python3.8
+      # Nombre de la funcion donde se le añade el estado de despliegue
       FunctionName: !Sub ${serviceTest}-deleteFunction-${stage}
+      # Se le adjunta una politica creada donde la funcion tiene acceso sobre DynamoDB
       Policies: 
         - arn:aws:iam::414960104553:policy/AllowDynamo
       Events:
         delete:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: delete
 
+  # Creacion de la base de datos con la definion de su esquema (PrimaryKey) y la tabla. 
   DynamoDBTable:
    Type: AWS::DynamoDB::Table
+   # El deletionPolicy es de tipo retain para que no lo elimine
    DeletionPolicy: Retain
    Properties:
      AttributeDefinitions:
@@ -138,17 +193,12 @@ Resources:
        ReadCapacityUnits: 1
        WriteCapacityUnits: 1
      TableName: !Sub ${serviceTest}-${stage}
+     
+
 
 Outputs:
-#   hello:
-  
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
 
-  # HelloWorldFunction:
-  #   Description: "Hello World Lambda Function ARN"
-  #   Value: !GetAtt HelloWorldFunction.Arn
+  #Imprimira el arn de la funcion delete 
   deleteFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt deleteFunction.Arn

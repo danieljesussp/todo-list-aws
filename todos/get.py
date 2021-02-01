@@ -6,11 +6,11 @@ from todos import todoList
 
 
 def get(event, context):
-    
+    # Obtencion de la primary key pasada por parametro
     key={
              'id': event['pathParameters']['id']
          }
-    
+    # Invocacion a la clase DAO para obtener el componente con ese ID
     result = todoList.get_item(key)
     
     # create a response

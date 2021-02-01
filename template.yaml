@@ -46,7 +46,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/create.create
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue
@@ -68,7 +68,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/list.list
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue
@@ -90,7 +90,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/get.get
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue
@@ -112,7 +112,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/update.update
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue
@@ -135,7 +135,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/translate.translate
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue
@@ -159,7 +159,7 @@ Resources:
     # El deletionPolicy es de tipo retain para que no lo elimine
     DeletionPolicy: Retain
     Properties:
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-5o7xoj5nq4pn/todo-list-aws/Prod/dac5a6813e1f0193d598d631d8e19274
+      CodeUri: ./
       Handler: todos/delete.delete
       Runtime: python3.8
       # Nombre de la funcion donde se le añade el estado de despliegue

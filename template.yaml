@@ -22,23 +22,23 @@ Globals:
     Environment:
       Variables:
         # Variable de entorno con el nombre de la tabla. Será una variable de entorno para utilizarla en todo el proyecto
-        DYNAMODB_TABLE: !Sub ${serviceTest}-${stage}
+        DYNAMODB_TABLE: todoTable
     Timeout: 3
 
 Resources:
   # Creacion de un API Gateway de tipo HttpApi para introducir la variable stage en la URL del gateway
   # Se hare referencia a este resource en cada funcion REST
-  HttpApi:
-    # Debe de ser de tipo HttpApi debido a que las funciones REST son de ese tipo
-    Type: AWS::Serverless::HttpApi
-    # El deletionPolicy es de tipo retain para que no lo elimine
-    DeletionPolicy: Retain
-    Properties:
-      # Se le indica el stage que debe de insertar en la URL
-      StageName: !Sub ${stage}
-      DefaultRouteSettings:
-        ThrottlingBurstLimit: 200
-      FailOnWarnings: True
+  # HttpApi:
+  #   # Debe de ser de tipo HttpApi debido a que las funciones REST son de ese tipo
+  #   Type: AWS::Serverless::HttpApi
+  #   # El deletionPolicy es de tipo retain para que no lo elimine
+  #   DeletionPolicy: Retain
+  #   Properties:
+  #     # Se le indica el stage que debe de insertar en la URL
+  #     StageName: !Sub ${stage}
+  #     DefaultRouteSettings:
+  #       ThrottlingBurstLimit: 200
+  #     FailOnWarnings: True
   
   # Funcion lambda create. Se le especifica el nombre de la funcion, en handler, su runtime, la politica que obtendra, el tipo de Gatway APi que utilizara y el metodo    
   createFunction:
@@ -58,7 +58,7 @@ Resources:
         create:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos
             Method: post
   
@@ -80,7 +80,7 @@ Resources:
         list:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos
             Method: get
 
@@ -102,7 +102,7 @@ Resources:
         get:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: get
 
@@ -124,7 +124,7 @@ Resources:
         update:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: put
 
@@ -149,7 +149,7 @@ Resources:
         translate:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos/{id}/{lang}
             Method: get
 
@@ -171,28 +171,28 @@ Resources:
         delete:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            ApiId: !Ref HttpApi
+            #ApiId: !Ref HttpApi
             Path: /todos/{id}
             Method: delete
 
-  # Creacion de la base de datos con la definion de su esquema (PrimaryKey) y la tabla. 
-  DynamoDBTable:
-   Type: AWS::DynamoDB::Table
-   # El deletionPolicy es de tipo retain para que no lo elimine
-   DeletionPolicy: Retain
-   Properties:
-     AttributeDefinitions:
-       -
-         AttributeName: id
-         AttributeType: S
-     KeySchema:
-       -
-         AttributeName: id
-         KeyType: HASH
-     ProvisionedThroughput:
-       ReadCapacityUnits: 1
-       WriteCapacityUnits: 1
-     TableName: !Sub ${serviceTest}-${stage}
+  # # Creacion de la base de datos con la definion de su esquema (PrimaryKey) y la tabla. 
+  # DynamoDBTable:
+  # Type: AWS::DynamoDB::Table
+  # # El deletionPolicy es de tipo retain para que no lo elimine
+  # DeletionPolicy: Retain
+  # Properties:
+  #   AttributeDefinitions:
+  #     -
+  #       AttributeName: id
+  #       AttributeType: S
+  #   KeySchema:
+  #     -
+  #       AttributeName: id
+  #       KeyType: HASH
+  #   ProvisionedThroughput:
+  #     ReadCapacityUnits: 1
+  #     WriteCapacityUnits: 1
+  #   TableName: !Sub ${serviceTest}
      
 
 

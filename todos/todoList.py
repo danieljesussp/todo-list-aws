@@ -1,10 +1,11 @@
 import boto3
-import os
-
-dynamodb = boto3.resource('dynamodb')
+import os 
+#import todos.todoTable as dynamodb 
 
 #crear recurso de acceso a la base de datos con el nombre de la tabla definida en template.yml
-table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
+dynamodb = boto3.resource(
+                'dynamodb', endpoint_url='http://172.18.0.2:8000')
+table = dynamodb.Table('todoTable')
 
 #Funcion de insertar en la BBDD. Se le pasa como valor el componente que se desea insertar
 def put_item(itemValue):

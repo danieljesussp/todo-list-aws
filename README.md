@@ -72,6 +72,71 @@ De cara a simplificar el despliegue, simplemente habría que ejecutar
 sam build
 sam deploy
 ```
+## Despliegue infraestructura de Terraform para el Apartado B
+
+En la instancia de Cloud9, simplemente se ha de ejecutar el script de `configure_enviroment.sh`, dentro del directorio de [terraform](https://registry.terraform.io/).
+Cuando se pregunte por la IP, [indicar la del equipo](https://cualesmiip.com) desde donde se desea conectar. 
+```bash
+$ cd terraform
+$ ./configure_environment.sh
+
+$ ./terraform plan -out=plan
+var.myip
+  A continuación indicar la IP desde donde se va a conectar al servidor web y la instancia ec2
+
+  Enter a value: 57.123.221.88 # IP de ejemplo, sustituir por la personal!
+
+$ ./terraform apply plan
+
+...
+Apply complete! Resources: 8 added, 0 changed, 8 destroyed.
+
+The state of your infrastructure has been saved to the path
+below. This state is required to modify and destroy your
+infrastructure, so keep it safe. To inspect the complete state
+use the `terraform show` command.
+
+State path: terraform.tfstate
+
+Outputs:
+
+jenkins_instance_id = "i-03182e2534954fdf5"
+jenkins_instance_security_group_id = "sg-0e00e629e32749ec5"
+jenkins_url = "http://112.23.18.67:8080"
+key_pair = <<EOT
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAsk5rieVA2zwpo86gAZGq37L4aRCC2YeHxZ4LxFqTJ1e+9pHB
+....
+S6Vm27ZFT3Rbbt1KRB64AlfLGEZ+hB07JVzz4RSQvZkUw3Whosk8qUQ=
+-----END RSA PRIVATE KEY-----
+
+EOT
+public_ip = "112.23.18.67"
+s3_bucket_production = "es-unir-production-s3-XXXXX-artifacts"
+s3_bucket_staging = "es-unir-production-s3-XXXXX-artifacts"
+ssh_connection = "ssh -i resources/key.pem ec2-user@112.23.18.67"
+  ...
+```
+
+Este script genera una serie de salidas:
+- Por un lado genera una serie de ficheros que son necesarios de mantener, pero que no deben subirse al repositorio, como son 
+  - `terraform`: ejecutable de terraform 
+  - `terraform.tfstate`: estado de los recursos desplegados con terraform  
+  - `.terraform.lock.hcl`: fichero de bloqueo de los recursos desplegados con terraform, para evitar problemas de dependencias.
+  - `resources/key.pem`: la clave para acceder a la instancia EC2.
+
+- Por otro lado está la salida del propio script, que genera las siguientes salidas:
+  - `jenkins_instance_id` = Identificador de la instancia EC2 levantada en la cuenta de AWS, e.g:`"i-03182e2534954fdf5"`
+  - `jenkins_instance_security_group_id` = Identificador del Security Group que usa la EC2 levantada en la cuenta de AWS, e.g:`"sg-0e00e629e32749ec5"`
+  - `jenkins_url` = URL del servidor de Jenkins desplegado. La contraseña de acceso se encuentra disponible en la guía de la práctica. e.g:`"http://112.23.18.67:8080"`
+  - `key_pair` = Clave privada para acceder a la instancia EC2 levantada por SSH.
+  - `public_ip` = Dirección IP de la instancia EC2 levantada en la cuenta de AWS, e.g:`"112.23.18.67"`
+  - `s3_bucket_production` = Bucket de S3 levantado en la cuenta de AWS, para persistir los artefactos del pipeline de production en Jenkins, e.g:`"es-unir-production-s3-XXXXX-artifacts"`
+  - `s3_bucket_staging` = Bucket de S3 levantado en la cuenta de AWS, para persistir los artefactos del pipeline de production en Jenkins, e.g:`"es-unir-production-s3-XXXXX-artifacts"`
+  - `ssh_connection` = Conexión ssh para acceder al servidor de Jenkins, e.g`"ssh -i resources/key.pem ec2-user@112.23.18.67"`
+
+**Importante:** Si se desea desplegar desde un equipo local y no desde Cloud9 -recordar que este script está pensado para ejecutar en un entorno de Linux y que desde local-, hay que configurar las credenciales temporales de la cuenta de AWS Educate dentro del fichero `~/.aws./credentials` del `home` del usuario.
+## Uso
 
 Se puede crear, lista, coger, actualizar y borrar una tarea, ejecutando los siguientes comandos `curl` desde la línea de comandos del terminal:
 ### Crear una tarea

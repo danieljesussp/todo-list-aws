@@ -1,3 +1,9 @@
+def runShell(String command){
+    def responseCode = sh returnStatus: true, script: "${command} &> tmp.txt"
+    def output =  readFile(file: "tmp.txt")
+    return (output != "")
+}
+
 pipeline {
     agent any
     stages {
@@ -11,78 +17,246 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Get some code from a CodeCommit repository
-                sh "git clone https://${env.CODECOMMIT_USER}:${env.CODECOMMIT_PASSWORD}@git-codecommit.us-east-1.amazonaws.com/v1/repos/todo-list-serverless"
+                sh "git clone https://${env.CODECOMMIT_USER}:${env.CODECOMMIT_PASSWORD}@git-codecommit.us-east-1.amazonaws.com/v1/repos/todo-list-aws"
+                dir("todo-list-aws"){
+                    sh "git checkout develop"
+                    sh "ls -al"
+                }
             }
         }
         stage('SetUp'){
             steps{
-                // Setup Virtualenv for testing
+                sh "python3 -m venv tutorial-env"
+                sh "ls -al "
+                sh "pwd"
+                //sh "source tutorial-env/bin/activate"
+                sh """
+                source tutorial-env/bin/activate
+                python --version
+                pip install awscli
+                pip install aws-sam-cli
+                pip install radon
+                pip install flake8
+                pip install flake8_polyfill
+                pip install bandit
+                pip install -U pytest
+                pip install moto
+                pip install docker
+                pip install coverage
+
+                """
             }
         }
-        stage('Test'){
+        stage('Radon Test'){
             steps{
-                dir("todo-list-aws/test") {
+                script{
+                    sh "ls -al"
                     // Static program analysis -> radon
-                    echo 'Make some cool static program analysis wich radon. IIs the code enought simple to understand?'
+                    
+                    sh """
+                        source tutorial-env/bin/activate
+                        radon cc todo-list-aws/tests/ --total-average > radon.txt
+                        
+                    """
+                    
+                    sh "cat radon.txt"
+                    
+                    if (!(runShell('grep \'Average complexity: A\' radon.txt') || runShell('grep \'Average complexity: B\' radon.txt'))) {
+                        echo "La calidad de las pruebas Radon es inferior a C"
+                        sh "exit 1"
+                    }
+                    sh "rm radon.txt"
+                    echo "La calidad de las pruebas Radon es superior a B"
                 }
             }
+        }
+        stage('Flake tests'){
             steps{
-                dir("todo-list-aws/test") {
-                    // Quality program analysis -> flake8
-                    echo 'echo My code has enought quality?'
+                script{
+                    sh """
+                        source tutorial-env/bin/activate
+                        flake8 todo-list-aws/tests/ > flake8.txt
+                        
+                    """
+                    if (runShell('cat flake8.txt')) {
+                        echo "Los fallos del test de flake8 son:"
+                        sh "cat flake8.txt"
+                        sh "exit 1"
+                    }
+                    sh "rm flake8.txt"
+                    echo 'Ha pasado el flake8 sin incidencias'
                 }
             }
+        }
+        stage('Bandit tests'){
             steps{
-                dir("todo-list-aws/test") {
-                    // Security programa analysis -> bandit
-                    echo 'Make some security analysis of the code. Is the code secure?'
+                script{
+                    sh """
+                        source tutorial-env/bin/activate
+                        bandit -r todo-list-aws/tests/ > bandit.txt
+                        
+                    """
+                    if (!(runShell('grep \'No issues identified.\' bandit.txt'))) {
+                        echo "Las lineas de codigo que tienen potenciales riesgos de seguridad son:"
+                        sh "cat bandit.txt"
+                        sh "exit 1"
+                    }
+                    
+                    sh "rm bandit.txt"
+                    echo 'Ha pasado el bandit sin incidencias'
                 }
             }
+        }
+        stage('Unit tests'){
             steps{
-                dir("todo-list-aws/test") {
-                    // Unitary testing -> unittest or pytest
-                    sh ''
-                    // Coverage report -> coverage
-                    echo 'Execute something like coverage run -m & coverage report -m'
-                }
+                //dir("todo-list-aws/tests"){
+                //  sh """
+                //      source ../../tutorial-env/bin/activate
+                //      docker network create dynamodb_network
+                //      docker run -d --network dynamo_network --name dybamodb -p 8000:8000 amazon/dynamodb-local
+                //      pytest TestToDoClass.py
+                //      coverage run -m todo-list-aws/tests/TestToDoClass
+                //  """
+                //}
+                echo 'Ha pasado las pruebas unitarias sin incidencias'
             }
         }
         stage('Build') {
             steps {
                 dir("todo-list-aws") {
+                    sh "ls -al"
                     // Build release
                     echo 'Maybe something like sam build?'
-                    sh "sam build ..."
                     // Package release and persist in s3 bucket
                     sh "sam package --template-file template.yaml --output-template-file packaged.yaml --s3-bucket ${env.COUNTRY}-${env.TEAM}-${env.ENVIRONMENT}-${env.SERVICE}-${env.RAND_ID}-artifacts" 
                 }
             }
         }
-        stage('Integration Test on local') {
-            steps{
-                dir("todo-list-aws/test") {
-                    // Unittest or pytest                   
-                    // Integration test over local -> unittest or pytest against the lambda functions.
-                    echo 'test all methods works fine. Maybe with sam-local and aws dynamodb official docker image'
-                }   
-            }
-        }
         stage('Deploy'){
             steps{
-                dir("todo-list-aws") {
-                    // Deploy architecture
-                    sh "yes | sam deploy --template-file packaged.yaml --stack-name ${env.STACK_NAME} --parameter-overrides Environment=${env.ENVIRONMENT}"
+                script{
+                    dir("todo-list-aws") {
+                        sh "ls -al"
+                        //sh "cat packaged.yaml"
+                        // Deploy architecture
+                        //sh "sam build"
+                        //sh "yes | sam deploy"
+                        sh "yes | sam deploy --template-file packaged.yaml --stack-name ${env.STACK_NAME} --s3-bucket ${env.COUNTRY}-${env.TEAM}-${env.ENVIRONMENT}-${env.SERVICE}-${env.RAND_ID}-artifacts --parameter-overrides stage=${env.ENVIRONMENT} serviceTest=${env.STACK_NAME} > output.txt"
+                        sh "cat output.txt"
+                        def data = readFile(file: 'output.txt')
+                        String[] spl0, spl1
+                        spl0 = data.split('Value               ')
+                        println(spl0[1])
+                        spl1 = spl0[1].split('/')
+                        env.HTTPURL = spl1[0]
+                    }
+                    
                 }   
             }
         }
         stage('Integration Test after deploy'){
             steps{
-                dir("todo-list-aws") {
-                    // Unittest or pytest                   
-                    // Unitary testing -> unittest or pytest against the lambda functions.
-                    echo 'test all methods works fine'
-                }   
+                script{
+                    dir("todo-list-aws") {
+                        
+                        sh "curl -i -X POST https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos --data \'{\"text\": \"Learn Serverless\"}\' --header \'Content-Type: application/json\' > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        echo "Se ha creado el componente"
+                        
+                        def data = readFile(file: 'add.txt')
+                        
+                        String[] spl1, spl2, spl3, spl0
+                        spl0 = data.split('"id": "')
+                        spl1 = spl0[1].split('"')
+                        
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'${spl1[0]}\' add.txt"))) {
+                            echo "No ha encontrado el componente"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'[{\"\' add.txt"))) {
+                            echo "La lista esta vacia"
+                            sh "exit 1"
+                        }
+                        echo "Si que esta el componente en la lista"
+                        
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        if (!(runShell('grep \'\"text\": \"Learn Serverless\"\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        echo "Ha encontrado el componente"
+                        
+                        sh "curl -i -X PUT https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} --data \'{ \"text\": \"Learn python and more\", \"checked\": true }\' --header \'Content-Type: application/json\' > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'"checked": true\' add.txt'))) {
+                            echo "No la ha actualizado"
+                            sh "exit 1"
+                        }
+                        if (!(runShell('grep \'\"text\": \"Learn python and more\"\' add.txt'))) {
+                            echo "No la ha actualizado"
+                            sh "exit 1"
+                        }
+                        echo "Ha actualizado el componente correctamente"
+                        
+                        sh "curl -i -X DELETE https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos > add.txt"
+                        sh "cat add.txt"
+                        if ((runShell("grep \'${spl1[0]}\' add.txt"))) {
+                            echo "No ha eliminado el componente"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'[]\' add.txt"))) {
+                            echo "No ha eliminado el componente"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 500\' add.txt'))) {
+                            echo "El codigo de la pagina es 200"
+                            sh "exit 1"
+                        }
+                        echo "Si que ha eliminado el componente en la lista"
+                    }   
+                }
             }
+        }
+        
+    }
+    post {
+        // Clean after build
+        always {
+            cleanWs(cleanWhenNotBuilt: false,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true,
+                    patterns: [[pattern: '.gitignore', type: 'INCLUDE'],
+                               [pattern: '.propsfile', type: 'EXCLUDE']])
         }
     }
 }

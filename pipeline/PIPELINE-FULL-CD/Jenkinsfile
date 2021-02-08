@@ -1,1 +1,31 @@
-//A rellenar por el alumno
+pipeline{
+    agent any
+    stages{
+        stage('Clean'){    
+            steps {
+                deleteDir()
+            }
+        }
+        stage('Despliegue de stagging'){
+            steps{
+                build job: 'PIPELINE-FULL-STAGING'
+            }
+        }
+        stage('Merge develop a master'){
+            steps{
+                sh "git clone https://${env.CODECOMMIT_USER}:${env.CODECOMMIT_PASSWORD}@git-codecommit.us-east-1.amazonaws.com/v1/repos/todo-list-aws"
+                dir("todo-list-aws"){
+                    sh "git checkout develop"
+                    sh "git checkout master"
+                    sh "git merge develop -m \"Merge develop -> master\""
+                    sh "git pull"
+                }
+            }
+        }
+        stage('Despliegue de Production'){
+            steps{
+                build job: 'PIPELINE-FULL-PRODUCTION'
+            }
+        }
+    }
+}

@@ -8,16 +8,14 @@ def get_todo(id, dynamodb=None):
         dynamodb = boto3.resource(
             'dynamodb', endpoint_url="http://localhost:8000")
 
-    table = dynamodb.Table('todoTable')
-
     try:
-        #Creacion de la variable con la PrimaryKey
-        Key={
+        # Creacion de la variable con la PrimaryKey
+        Key = {
                 'id': id
             }
         # Invocacion a la clase DAO para obtener el componente con ese ID
         response = todoList.get_item(Key)
-        
+
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:

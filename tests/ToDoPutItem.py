@@ -9,19 +9,19 @@ def put_todo(text, id, dynamodb=None):
         dynamodb = boto3.resource(
             'dynamodb', endpoint_url="http://localhost:8000")
 
-    table = dynamodb.Table('todoTable')
+
     timestamp = str(time.time())
 
     try:
         # Creacion de la variable a añadir en la BBDD
-        Item={
+        Item = {
             'id': id,
             'text': text,
             'checked': False,
             'createdAt': timestamp,
             'updatedAt': timestamp,
         }
-         # Invocacion a la clase DAO para añadir el componente
+        # Invocacion a la clase DAO para añadir el componente
         response = todoList.put_item(Item)
 
     except ClientError as e:

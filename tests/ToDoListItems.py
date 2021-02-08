@@ -9,10 +9,9 @@ def list_todo(id, dynamodb=None):
         dynamodb = boto3.resource(
             'dynamodb', endpoint_url="http://localhost:8000")
 
-    table = dynamodb.Table('todoTable')
-
     try:
-        # Invocacion a la clase DAO para obtener todos los componentes de la BBDD
+        # Invocacion a la clase DAO para obtener todos los
+        # componentes de la BBDD
         response = todoList.list_items()
 
     except ClientError as e:

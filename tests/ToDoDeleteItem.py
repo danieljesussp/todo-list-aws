@@ -8,16 +8,14 @@ def delete_todo(id, dynamodb=None):
         dynamodb = boto3.resource(
             'dynamodb', endpoint_url="http://localhost:8000")
 
-    table = dynamodb.Table('todoTable')
-
     try:
         # Creacion de la variable con el ID a eliminar
-        Key={
+        Key = {
             'id': id
         }
         # Invocacion a la clase DAO para eliminar el componente con ese ID
         response = todoList.delete_item(Key)
-        
+
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:

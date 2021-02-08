@@ -198,7 +198,8 @@ Resources:
 
 Outputs:
 
-  #Imprimira el arn de la funcion delete 
-  deleteFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt deleteFunction.Arn
+  #Imprime la URL de HttpAPI
+  HttpApiUrl:
+    Description: URL of your API endpoint
+    Value:
+      Fn::Sub: '${HttpApi}/'

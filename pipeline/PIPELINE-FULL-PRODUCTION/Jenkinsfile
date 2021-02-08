@@ -1,1 +1,172 @@
-// A rellenar por el alumno
+def runShell(String command){
+    def responseCode = sh returnStatus: true, script: "${command} &> tmp.txt"
+    def output =  readFile(file: "tmp.txt")
+    return (output != "")
+}
+
+pipeline {
+    agent any
+    stages {
+        stage('Clean'){    
+            steps {
+                deleteDir()
+                sh 'printenv'
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                // Get some code from a CodeCommit repository
+                sh "git clone https://${env.CODECOMMIT_USER}:${env.CODECOMMIT_PASSWORD}@git-codecommit.us-east-1.amazonaws.com/v1/repos/todo-list-aws"
+            }
+        }
+        stage('SetUp'){
+            steps{
+                sh "python3 -m venv tutorial-env"
+                sh "ls -al "
+                sh "pwd"
+                //sh "source tutorial-env/bin/activate"
+                sh """
+                source tutorial-env/bin/activate
+                python --version
+                pip install awscli
+                pip install aws-sam-cli
+
+                """
+            }
+        }
+        stage('Build') {
+            steps {
+                dir("todo-list-aws") {
+                    sh "ls -al"
+                    // Build release
+                    echo 'Maybe something like sam build?'
+                    // Package release and persist in s3 bucket
+                    sh "sam package --template-file template.yaml --output-template-file packaged.yaml --s3-bucket ${env.COUNTRY}-${env.TEAM}-${env.ENVIRONMENT}-${env.SERVICE}-${env.RAND_ID}-artifacts" 
+                }
+            }
+        }
+        stage('Deploy'){
+            steps{
+                script{
+                    dir("todo-list-aws") {
+                        sh "ls -al"
+                        sh "yes | sam deploy --template-file packaged.yaml --stack-name ${env.STACK_NAME} --s3-bucket ${env.COUNTRY}-${env.TEAM}-${env.ENVIRONMENT}-${env.SERVICE}-${env.RAND_ID}-artifacts --parameter-overrides stage=${env.ENVIRONMENT} serviceTest=${env.STACK_NAME} > output.txt"
+                        sh "cat output.txt"
+                        def data = readFile(file: 'output.txt')
+                        String[] spl0, spl1
+                        spl0 = data.split('Value               ')
+                        println(spl0[1])
+                        spl1 = spl0[1].split('/')
+                        env.HTTPURL = spl1[0]
+                    }
+                    
+                }   
+            }
+        }
+        stage('Integration Test after deploy'){
+            steps{
+                script{
+                    dir("todo-list-aws") {
+                        
+                        sh "curl -i -X POST https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos --data \'{\"text\": \"Learn Serverless\"}\' --header \'Content-Type: application/json\' > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        echo "Se ha creado el componente"
+                        
+                        def data = readFile(file: 'add.txt')
+                        
+                        String[] spl1, spl2, spl3, spl0
+                        spl0 = data.split('"id": "')
+                        spl1 = spl0[1].split('"')
+                        
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'${spl1[0]}\' add.txt"))) {
+                            echo "No ha encontrado el componente"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'[{\"\' add.txt"))) {
+                            echo "La lista esta vacia"
+                            sh "exit 1"
+                        }
+                        echo "Si que esta el componente en la lista"
+                        
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        if (!(runShell('grep \'\"text\": \"Learn Serverless\"\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        echo "Ha encontrado el componente"
+                        
+                        sh "curl -i -X PUT https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} --data \'{ \"text\": \"Learn python and more\", \"checked\": true }\' --header \'Content-Type: application/json\' > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'"checked": true\' add.txt'))) {
+                            echo "No la ha actualizado"
+                            sh "exit 1"
+                        }
+                        if (!(runShell('grep \'\"text\": \"Learn python and more\"\' add.txt'))) {
+                            echo "No la ha actualizado"
+                            sh "exit 1"
+                        }
+                        echo "Ha actualizado el componente correctamente"
+                        
+                        sh "curl -i -X DELETE https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 200\' add.txt'))) {
+                            echo "El codigo de la pagina no es 200"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos > add.txt"
+                        sh "cat add.txt"
+                        if ((runShell("grep \'${spl1[0]}\' add.txt"))) {
+                            echo "No ha eliminado el componente"
+                            sh "exit 1"
+                        }
+                        if (!(runShell("grep \'[]\' add.txt"))) {
+                            echo "No ha eliminado el componente"
+                            sh "exit 1"
+                        }
+                        sh "curl -i https://${env.HTTPURL}.execute-api.us-east-1.amazonaws.com/${env.ENVIRONMENT}/todos/${spl1[0]} > add.txt"
+                        sh "cat add.txt"
+                        if (!(runShell('grep \'HTTP/2 500\' add.txt'))) {
+                            echo "El codigo de la pagina es 200"
+                            sh "exit 1"
+                        }
+                        echo "Si que ha eliminado el componente en la lista"
+                    }   
+                }
+            }
+        }
+        
+    }
+    post {
+        // Clean after build
+        always {
+            cleanWs(cleanWhenNotBuilt: false,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true,
+                    patterns: [[pattern: '.gitignore', type: 'INCLUDE'],
+                               [pattern: '.propsfile', type: 'EXCLUDE']])
+        }
+    }
+}
